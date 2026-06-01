@@ -2118,8 +2118,23 @@ async function syncFromCloud(user){
     if(error&&error.code!=='PGRST116')return;
     if(data?.data&&data.data.months?.length){
       const cloud=data.data;
-      // merge — take whichever has more months, then deep merge
-      state=mergeStates(state,cloud);
+      const local=state;
+      // Count total logged cells to decide which has more real data
+      function countData(s){
+        let n=0;
+        s.months.forEach(m=>m.grid.forEach(r=>r.forEach(v=>{if(v!==0)n++;})));
+        return n;
+      }
+      const cloudCount=countData(cloud);
+      const localCount=countData(local);
+      if(cloudCount>=localCount){
+        // Cloud has more data — use cloud, merge any extra local on top
+        state=mergeStates(cloud,local);
+      } else {
+        // Local has more data — merge cloud on top then push back
+        state=mergeStates(local,cloud);
+        await pushToCloud(user);
+      }
       if(curIdx>=state.months.length)curIdx=state.months.length-1;
       // restore AI config and theme
       if(data.ai_config?.provider){aiConfig=data.ai_config;localStorage.setItem('gnt_ai_cfg',JSON.stringify(aiConfig));updateAIIndicator();}
