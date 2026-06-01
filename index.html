@@ -464,6 +464,67 @@ input[type=date]:focus,input[type=number]:focus,input[type=text].modal-inp:focus
 .splash-fill{height:100%;background:var(--teal);border-radius:1px;animation:splashLoad 2.8s ease-out forwards}
 @keyframes splashLoad{0%{width:0%}60%{width:70%}85%{width:88%}100%{width:100%}}
 
+
+/* ── USER CHIP ── */
+.user-chip{display:flex;align-items:center;gap:7px;padding:4px 10px 4px 4px;border-radius:20px;
+  border:1px solid var(--border3);background:var(--bg3);cursor:pointer;transition:border-color .15s}
+.user-chip:hover{border-color:var(--teal)}
+.user-avatar{width:26px;height:26px;border-radius:50%;background:var(--teal);display:flex;align-items:center;
+  justify-content:center;font-family:var(--display);font-size:11px;font-weight:800;color:#07090d;flex-shrink:0}
+.user-name{font-family:var(--mono);font-size:10px;color:var(--ink2);max-width:80px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── USER DROPDOWN ── */
+.user-dropdown{position:absolute;top:54px;right:12px;background:var(--panel);border:1px solid var(--border);
+  border-radius:var(--r2);padding:6px;min-width:200px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.ud-name{font-family:var(--display);font-size:13px;font-weight:700;color:var(--ink);padding:6px 10px 2px}
+.ud-email{font-family:var(--mono);font-size:9px;color:var(--ink3);padding:0 10px 8px;
+  border-bottom:1px solid var(--border2);margin-bottom:6px}
+.ud-item{font-family:var(--mono);font-size:11px;color:var(--ink2);padding:7px 10px;border-radius:6px;
+  cursor:pointer;transition:background .1s;display:flex;align-items:center;gap:8px}
+.ud-item:hover{background:var(--bg3);color:var(--ink)}
+.ud-item.danger{color:var(--red)}.ud-item.danger:hover{background:var(--red-dim)}
+
+/* ── AUTH MODAL ── */
+.auth-modal{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);
+  padding:0;width:420px;max-width:95vw;overflow:hidden}
+.auth-hero{padding:28px 28px 20px;background:linear-gradient(135deg,rgba(61,224,170,.08),transparent);
+  border-bottom:1px solid var(--border2);text-align:center}
+.auth-logo-sm{width:44px;height:44px;border:2px solid var(--teal);border-radius:10px;display:flex;
+  align-items:center;justify-content:center;font-family:var(--display);font-size:14px;font-weight:800;
+  color:var(--teal);margin:0 auto 10px;background:var(--teal-dim)}
+.auth-hero-title{font-family:var(--display);font-size:18px;font-weight:800;color:var(--ink);margin-bottom:3px}
+.auth-hero-sub{font-family:var(--mono);font-size:9px;color:var(--ink3);letter-spacing:.08em}
+.auth-body{padding:20px 24px}
+.auth-tabs{display:flex;gap:0;margin-bottom:16px;border-radius:8px;overflow:hidden;border:1px solid var(--border3)}
+.auth-tab{flex:1;padding:8px;font-family:var(--mono);font-size:11px;border:none;background:transparent;
+  color:var(--ink3);cursor:pointer;transition:all .15s;letter-spacing:.04em}
+.auth-tab.active{background:var(--teal);color:#07090d;font-weight:700}
+.auth-field{margin-bottom:10px}
+.auth-field label{display:block;font-family:var(--mono);font-size:9px;color:var(--ink3);
+  text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.auth-field input{width:100%;font-family:var(--mono);font-size:12px;background:var(--input-bg);
+  border:1px solid var(--border3);border-radius:8px;padding:8px 10px;color:var(--ink);outline:none;transition:border-color .15s}
+.auth-field input:focus{border-color:var(--teal)}
+.auth-field input::placeholder{color:var(--ink3)}
+.auth-btn{width:100%;padding:10px;font-family:var(--mono);font-size:12px;font-weight:700;
+  border-radius:8px;border:none;cursor:pointer;transition:all .15s;letter-spacing:.04em;margin-bottom:7px;
+  display:flex;align-items:center;justify-content:center;gap:8px}
+.auth-btn.primary{background:var(--teal);color:#07090d}
+.auth-btn.primary:hover{opacity:.88}
+.auth-btn.ghost{background:var(--bg3);color:var(--ink2);border:1px solid var(--border3)}
+.auth-btn.ghost:hover{border-color:var(--border);color:var(--ink)}
+.auth-btn.google-btn{background:#fff;color:#333}
+.auth-btn.github-btn{background:#24292e;color:#fff}
+.auth-divider{display:flex;align-items:center;gap:10px;margin:12px 0;font-family:var(--mono);font-size:9px;color:var(--ink3)}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border2)}
+.auth-msg{font-family:var(--mono);font-size:10px;padding:7px 10px;border-radius:6px;margin-bottom:10px;display:none}
+.auth-msg.show{display:block}
+.auth-msg.err{color:var(--red);background:var(--red-dim);border:1px solid rgba(255,107,107,.2)}
+.auth-msg.ok{color:var(--teal);background:var(--teal-dim);border:1px solid var(--border)}
+.auth-footer{text-align:center;padding:0 24px 16px;font-family:var(--mono);font-size:9px;color:var(--ink3)}
+.auth-footer a{color:var(--teal);cursor:pointer}
+
 </style>
 </head>
 <body>
@@ -531,7 +592,21 @@ input[type=date]:focus,input[type=number]:focus,input[type=text].modal-inp:focus
     <div class="ai-indicator" id="aiIndicator" onclick="openAIModal()" title="AI review settings"><div class="ai-dot-ind" id="aiDotInd"></div><span id="aiIndLbl">AI</span></div>
     <button class="btn" onclick="exportCSV()">&#8595; export</button>
     <button class="btn" onclick="openSettings()">&#9881; settings</button>
+    <div class="user-chip hidden" id="userChip" onclick="toggleUserDropdown()">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <span class="user-name" id="userChipName">Account</span>
+    </div>
+    <button class="btn" id="signInBtn" onclick="openAuthModal()" style="display:none">&#128100; sign in</button>
   </div>
+</div>
+<!-- USER DROPDOWN -->
+<div id="userDropdown" class="user-dropdown hidden">
+  <div class="ud-name" id="udName">Guest</div>
+  <div class="ud-email" id="udEmail">Not signed in</div>
+  <div class="ud-item" onclick="openAIModal();toggleUserDropdown()">&#9881; AI provider</div>
+  <div class="ud-item" onclick="openSettings();toggleUserDropdown()">&#128197; Month settings</div>
+  <div class="ud-item" onclick="openSyncModal();toggleUserDropdown()">&#9729; Cloud sync</div>
+  <div class="ud-item danger" id="signOutBtn" onclick="handleSignOut()">&#8594; Sign out</div>
 </div>
 
 <main>
@@ -751,10 +826,56 @@ input[type=date]:focus,input[type=number]:focus,input[type=text].modal-inp:focus
   </div>
 </div>
 
+
+<!-- AUTH MODAL -->
+<div class="modal-ov hidden" id="authModal">
+  <div class="auth-modal">
+    <div class="auth-hero">
+      <div class="auth-logo-sm">GNT</div>
+      <div class="auth-hero-title">Sign in to GNT Lab</div>
+      <div class="auth-hero-sub">sync your data across all devices</div>
+    </div>
+    <div class="auth-body">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabSignIn" onclick="switchAuthTab('signin')">Sign In</button>
+        <button class="auth-tab" id="tabSignUp" onclick="switchAuthTab('signup')">Create Account</button>
+      </div>
+      <div class="auth-msg err" id="authErr"></div>
+      <div class="auth-msg ok" id="authOk"></div>
+      <div class="auth-field hidden" id="nameField">
+        <label>Your Name</label>
+        <input type="text" id="authName" placeholder="What should we call you?" maxlength="40"/>
+      </div>
+      <div class="auth-field">
+        <label>Email</label>
+        <input type="email" id="authEmail" placeholder="you@example.com"/>
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input type="password" id="authPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')handleEmailAuth()"/>
+      </div>
+      <button class="auth-btn primary" id="authMainBtn" onclick="handleEmailAuth()">Sign In</button>
+      <div class="auth-divider">or continue with</div>
+      <button class="auth-btn google-btn" onclick="handleOAuth('google')">
+        <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+      </button>
+      <button class="auth-btn github-btn" onclick="handleOAuth('github')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+        Continue with GitHub
+      </button>
+      <div class="auth-divider">or</div>
+      <button class="auth-btn ghost" onclick="closeModal('authModal')">&#128100; Continue as Guest</button>
+    </div>
+    <div class="auth-footer"><a onclick="showForgotPw()">Forgot password?</a></div>
+  </div>
+</div>
+
 <div id="toastEl" class="toast hidden"></div>
 
 
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
 // ══════════════════════════════════════════════
@@ -1120,7 +1241,7 @@ function loadState(){
 }
 
 function saveLocal(){localStorage.setItem('gnt_v2',JSON.stringify(state));}
-function save(){saveLocal();scheduleSync();}
+function save(){saveLocal();scheduleSync();scheduleCloudSave();}
 function cur(){return state.months[curIdx];}
 
 let state=loadState();
@@ -2067,6 +2188,189 @@ function showToast(msg){
 //  INIT
 // ══════════════════════════════════════════════
 
+
+// ══════════════════════════════════════════════
+//  SUPABASE — optional auth layer
+//  App always loads first, auth is on top
+// ══════════════════════════════════════════════
+const SB_URL='https://vdxaqcfkmduybcgsnpic.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkeGFxY2ZrbWR1eWJjZ3NucGljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNTQ3OTUsImV4cCI6MjA5NTgzMDc5NX0.gbDpmxHL5Xmys_j9RW1-jSL08MJV-shWhBquqNazy58';
+let sb=null;
+try{sb=supabase.createClient(SB_URL,SB_KEY);}catch(e){console.warn('Supabase init failed',e);}
+
+let sbUser=null;
+let cloudSaveTimer=null;
+
+// Show sign in button after app loads
+function initSupabase(){
+  if(!sb)return;
+  // Check existing session silently
+  sb.auth.getSession().then(({data:{session}})=>{
+    if(session?.user){
+      sbUser=session.user;
+      updateUserChip(session.user);
+      syncFromCloud(session.user);
+    } else {
+      // Show sign in button — non blocking
+      const btn=document.getElementById('signInBtn');
+      if(btn)btn.style.display='';
+    }
+  }).catch(()=>{});
+
+  // Listen for auth changes
+  sb.auth.onAuthStateChange((event,session)=>{
+    if(event==='SIGNED_IN'&&session?.user){
+      sbUser=session.user;
+      updateUserChip(session.user);
+      closeModal('authModal');
+      syncFromCloud(session.user);
+      const btn=document.getElementById('signInBtn');
+      if(btn)btn.style.display='none';
+      showToast('&#128075; Welcome back, '+getDisplayName(session.user)+'!');
+    }
+    if(event==='SIGNED_OUT'){
+      sbUser=null;
+      document.getElementById('userChip').classList.add('hidden');
+      const btn=document.getElementById('signInBtn');
+      if(btn)btn.style.display='';
+      showToast('Signed out');
+    }
+  });
+}
+
+function getDisplayName(user){
+  return user.user_metadata?.display_name||user.user_metadata?.full_name||user.user_metadata?.name||user.email?.split('@')[0]||'Friend';
+}
+
+function updateUserChip(user){
+  const name=getDisplayName(user);
+  document.getElementById('userAvatar').textContent=name.charAt(0).toUpperCase();
+  document.getElementById('userChipName').textContent=name;
+  document.getElementById('userChip').classList.remove('hidden');
+  document.getElementById('udName').textContent=name;
+  document.getElementById('udEmail').textContent=user.email||'';
+}
+
+function toggleUserDropdown(){
+  document.getElementById('userDropdown').classList.toggle('hidden');
+}
+document.addEventListener('click',e=>{
+  const chip=document.getElementById('userChip');
+  const dd=document.getElementById('userDropdown');
+  if(chip&&dd&&!chip.contains(e.target)&&!dd.contains(e.target))dd.classList.add('hidden');
+});
+
+// ── AUTH MODAL ──
+function openAuthModal(){
+  clearAuthMsgs();
+  document.getElementById('authModal').classList.remove('hidden');
+}
+
+function switchAuthTab(tab){
+  const isUp=tab==='signup';
+  document.getElementById('tabSignIn').classList.toggle('active',!isUp);
+  document.getElementById('tabSignUp').classList.toggle('active',isUp);
+  document.getElementById('nameField').classList.toggle('hidden',!isUp);
+  document.getElementById('authMainBtn').textContent=isUp?'Create Account':'Sign In';
+  clearAuthMsgs();
+}
+
+function clearAuthMsgs(){
+  ['authErr','authOk'].forEach(id=>{const el=document.getElementById(id);el.classList.remove('show');el.textContent='';});
+}
+function showAuthErr(m){const el=document.getElementById('authErr');el.textContent=m;el.classList.add('show');document.getElementById('authOk').classList.remove('show');}
+function showAuthOk(m){const el=document.getElementById('authOk');el.textContent=m;el.classList.add('show');document.getElementById('authErr').classList.remove('show');}
+
+async function handleEmailAuth(){
+  if(!sb)return;
+  const isUp=document.getElementById('tabSignUp').classList.contains('active');
+  const email=document.getElementById('authEmail').value.trim();
+  const pass=document.getElementById('authPass').value;
+  const name=document.getElementById('authName').value.trim();
+  clearAuthMsgs();
+  if(!email||!pass){showAuthErr('Please enter email and password.');return;}
+  if(isUp&&!name){showAuthErr('Please enter your name.');return;}
+  if(pass.length<6){showAuthErr('Password must be at least 6 characters.');return;}
+  document.getElementById('authMainBtn').textContent=isUp?'Creating…':'Signing in…';
+  document.getElementById('authMainBtn').disabled=true;
+  try{
+    if(isUp){
+      const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{display_name:name}}});
+      if(error)throw error;
+      if(data.user&&!data.session)showAuthOk('Check your email to confirm your account.');
+    }else{
+      const{error}=await sb.auth.signInWithPassword({email,password:pass});
+      if(error)throw error;
+    }
+  }catch(e){showAuthErr(e.message||'Something went wrong.');}
+  finally{
+    const btn=document.getElementById('authMainBtn');
+    btn.textContent=isUp?'Create Account':'Sign In';
+    btn.disabled=false;
+  }
+}
+
+async function handleOAuth(provider){
+  if(!sb)return;
+  try{
+    const{error}=await sb.auth.signInWithOAuth({provider,options:{redirectTo:window.location.href}});
+    if(error)throw error;
+  }catch(e){showAuthErr(e.message||'Login failed.');}
+}
+
+async function handleSignOut(){
+  document.getElementById('userDropdown').classList.add('hidden');
+  if(sb&&sbUser)await sb.auth.signOut();
+}
+
+async function showForgotPw(){
+  const email=prompt('Enter your email:');
+  if(!email)return;
+  const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.href});
+  if(error)alert('Error: '+error.message);
+  else alert('Reset link sent to '+email);
+}
+
+// ── CLOUD SYNC ──
+async function syncFromCloud(user){
+  if(!sb||!user)return;
+  try{
+    const{data,error}=await sb.from('user_data').select('*').eq('user_id',user.id).single();
+    if(error&&error.code!=='PGRST116')return;
+    if(data?.data&&data.data.months?.length){
+      const cloud=data.data;
+      // merge — take whichever has more months, then deep merge
+      state=mergeStates(state,cloud);
+      if(curIdx>=state.months.length)curIdx=state.months.length-1;
+      // restore AI config and theme
+      if(data.ai_config?.provider){aiConfig=data.ai_config;localStorage.setItem('gnt_ai_cfg',JSON.stringify(aiConfig));updateAIIndicator();}
+      if(data.theme){currentTheme=data.theme;localStorage.setItem('gnt_theme',data.theme);applyTheme(data.theme);}
+      saveLocal();render();
+      showToast('&#9729; Data synced from cloud');
+    } else {
+      // first time signing in — push local data up
+      await pushToCloud(user);
+    }
+  }catch(e){console.warn('Cloud sync error:',e);}
+}
+
+async function pushToCloud(user){
+  if(!sb||!user)return;
+  try{
+    await sb.from('user_data').upsert({
+      user_id:user.id,data:state,
+      ai_config:aiConfig,theme:currentTheme,
+      updated_at:new Date().toISOString()
+    },{onConflict:'user_id'});
+  }catch(e){console.warn('Cloud push error:',e);}
+}
+
+function scheduleCloudSave(){
+  if(!sb||!sbUser)return;
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer=setTimeout(()=>pushToCloud(sbUser),3000);
+}
+
 // Init
 populateCatSelects();
 render();
@@ -2081,6 +2385,8 @@ setTimeout(()=>{
   }
 },3000);
 if(syncConfig.binId&&syncConfig.apiKey){setSyncStatus('','configured');}else{setSyncStatus('','sync off');}
+// Init Supabase after app is fully loaded
+setTimeout(initSupabase,500);
 </script>
 </body>
 </html>
