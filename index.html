@@ -132,12 +132,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .ts-lbl{font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)}
 .tb-right{display:flex;gap:6px;align-items:center}
 
-/* ── SYNC INDICATOR ── */
-.sync-ind{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--ink3);padding:4px 8px;border-radius:12px;border:1px solid var(--border3);background:var(--bg3)}
-.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--ink3);transition:background .3s}
-.sync-dot.ok{background:var(--teal)}
-.sync-dot.err{background:var(--red)}
-.sync-dot.syncing{background:var(--amber);animation:blink .8s infinite}
 @keyframes blink{0%,100%{opacity:.3}50%{opacity:1}}
 
 /* ── THEME TOGGLE ── */
@@ -578,10 +572,6 @@ input[type=date]:focus,input[type=number]:focus,input[type=text].modal-inp:focus
     <div class="ts-item"><span class="ts-val" id="tsMonths">0</span><span class="ts-lbl">months</span></div>
   </div>
   <div class="tb-right">
-    <div class="sync-ind" id="syncInd" onclick="openSyncModal()" title="Cloud sync — click to configure" style="cursor:pointer">
-      <div class="sync-dot" id="syncDot"></div>
-      <span id="syncLbl">sync</span>
-    </div>
     <div class="theme-toggle">
       <button class="theme-btn" onclick="setTheme('dark')" id="tDark">Dark</button>
       <button class="theme-btn" onclick="setTheme('light')" id="tLight">Sand</button>
@@ -596,7 +586,7 @@ input[type=date]:focus,input[type=number]:focus,input[type=text].modal-inp:focus
       <div class="user-avatar" id="userAvatar">?</div>
       <span class="user-name" id="userChipName">Account</span>
     </div>
-    <button class="btn" id="signInBtn" onclick="openAuthModal()" style="display:none">&#128100; sign in</button>
+    <button class="btn" id="signInBtn" onclick="openAuthModal()">&#128100; sign in</button>
   </div>
 </div>
 <!-- USER DROPDOWN -->
@@ -605,7 +595,6 @@ input[type=date]:focus,input[type=number]:focus,input[type=text].modal-inp:focus
   <div class="ud-email" id="udEmail">Not signed in</div>
   <div class="ud-item" onclick="openAIModal();toggleUserDropdown()">&#9881; AI provider</div>
   <div class="ud-item" onclick="openSettings();toggleUserDropdown()">&#128197; Month settings</div>
-  <div class="ud-item" onclick="openSyncModal();toggleUserDropdown()">&#9729; Cloud sync</div>
   <div class="ud-item danger" id="signOutBtn" onclick="handleSignOut()">&#8594; Sign out</div>
 </div>
 
@@ -746,29 +735,6 @@ input[type=date]:focus,input[type=number]:focus,input[type=text].modal-inp:focus
   </div>
 </div>
 
-<!-- SYNC MODAL -->
-<div class="modal-ov hidden" id="syncModal">
-  <div class="modal">
-    <h3>// cloud sync setup</h3>
-    <div class="sync-setup">
-      <div class="sync-info">
-        Uses <strong>JSONBin.io</strong> — free, no account required per bin.<br>
-        1. Go to <a href="https://jsonbin.io" target="_blank">jsonbin.io</a> and create a free account<br>
-        2. Create a new Bin (set it to Private)<br>
-        3. Copy your <strong>Bin ID</strong> and <strong>Master API Key</strong><br>
-        4. Enter both below. Use the <em>same</em> keys on every device for sync.
-      </div>
-      <div class="frow"><label class="flbl">JSONBin Bin ID</label><input type="text" class="modal-inp" id="syncBinId" placeholder="e.g. 65ab12f..."/></div>
-      <div class="frow"><label class="flbl">JSONBin Master API Key</label><input type="text" class="modal-inp" id="syncApiKey" placeholder="$2a$10$..."/></div>
-      <div class="sync-status-box" id="syncStatusBox"></div>
-    </div>
-    <div class="mact">
-      <button class="btn" onclick="closeModal('syncModal')">close</button>
-      <button class="btn amber-btn" onclick="testSync()">test connection</button>
-      <button class="btn primary" onclick="applySyncSettings()">save &amp; sync</button>
-    </div>
-  </div>
-</div>
 
 
 <!-- AI SETUP MODAL -->
@@ -1015,192 +981,6 @@ if('serviceWorker' in navigator){
 
 installPWA();
 
-// ══════════════════════════════════════════════
-//  CLOUD SYNC (JSONBin.io — free tier)
-// ══════════════════════════════════════════════
-let syncConfig={binId:'',apiKey:''};
-try{const sc=JSON.parse(localStorage.getItem('gnt_sync_cfg'));if(sc)syncConfig=sc;}catch(e){}
-
-let syncTimer=null;let lastSyncTs=0;
-
-function setSyncStatus(status,msg){
-  const dot=document.getElementById('syncDot');
-  const lbl=document.getElementById('syncLbl');
-  dot.className='sync-dot';
-  if(status==='ok'){dot.classList.add('ok');lbl.textContent=msg||'synced';}
-  else if(status==='err'){dot.classList.add('err');lbl.textContent=msg||'error';}
-  else if(status==='syncing'){dot.classList.add('syncing');lbl.textContent=msg||'syncing…';}
-  else{lbl.textContent=msg||'sync';}
-}
-
-async function pushToCloud(stateData){
-  if(!syncConfig.binId||!syncConfig.apiKey)return false;
-  try{
-    setSyncStatus('syncing');
-    const payload={gnt_data:JSON.stringify(stateData),ts:Date.now(),version:2};
-    const res=await fetch(`https://api.jsonbin.io/v3/b/${syncConfig.binId}`,{
-      method:'PUT',
-      headers:{'Content-Type':'application/json','X-Master-Key':syncConfig.apiKey,'X-Bin-Versioning':'false'},
-      body:JSON.stringify(payload)
-    });
-    if(res.ok){setSyncStatus('ok',fmtTime(new Date()));lastSyncTs=Date.now();return true;}
-    else{setSyncStatus('err','push fail');return false;}
-  }catch(e){setSyncStatus('err','offline');return false;}
-}
-
-async function pullFromCloud(){
-  if(!syncConfig.binId||!syncConfig.apiKey)return null;
-  try{
-    const res=await fetch(`https://api.jsonbin.io/v3/b/${syncConfig.binId}/latest`,{
-      headers:{'X-Master-Key':syncConfig.apiKey}
-    });
-    if(!res.ok)return null;
-    const data=await res.json();
-    if(data.record&&data.record.gnt_data){
-      return JSON.parse(data.record.gnt_data);
-    }
-  }catch(e){}
-  return null;
-}
-
-function fmtTime(d){return d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}
-
-// Smart merge: takes the "most complete" data for each cell/day across local and remote
-function mergeStates(local,remote){
-  if(!remote||!remote.months)return local;
-  if(!local||!local.months)return remote;
-  // Merge month by month matching on startDate
-  const merged={months:[]};
-  const allDates=new Set([...local.months.map(m=>m.startDate),...remote.months.map(m=>m.startDate)]);
-  allDates.forEach(sd=>{
-    const lm=local.months.find(m=>m.startDate===sd);
-    const rm=remote.months.find(m=>m.startDate===sd);
-    if(!lm){merged.months.push(deepClone(rm));return;}
-    if(!rm){merged.months.push(deepClone(lm));return;}
-    // both exist — merge
-    const m=deepClone(lm);
-    // merge grid: take 1 (done) > 2 (miss) > 0 (empty); rest days are preserved
-    lm.habits.forEach((h,hi)=>{
-      if(hi<rm.grid.length){
-        for(let d=0;d<m.days;d++){
-          const lv=lm.grid[hi]?.[d]??0;
-          const rv=rm.grid[hi]?.[d]??0;
-          // rest day from either side wins; then done > miss > empty
-          if(lv===3||rv===3){m.grid[hi][d]=3;} // 3 = rest day marker
-          else if(lv===1||rv===1){m.grid[hi][d]=1;}
-          else if(lv===2||rv===2){m.grid[hi][d]=2;}
-          else{m.grid[hi][d]=0;}
-        }
-      }
-    });
-    // merge habits from remote that aren't in local
-    rm.habits.forEach((rh,rhi)=>{
-      const exists=lm.habits.some(lh=>lh.n===rh.n);
-      if(!exists){m.habits.push(deepClone(rh));m.grid.push(deepClone(rm.grid[rhi]));}
-    });
-    // merge moods: prefer non-empty
-    for(let d=0;d<m.days;d++){if(!m.moods[d]&&rm.moods[d])m.moods[d]=rm.moods[d];}
-    // merge notes: concatenate if different non-empty
-    for(let d=0;d<m.days;d++){
-      const ln=(lm.notes?.[d]||'').trim();const rn=(rm.notes?.[d]||'').trim();
-      if(!ln)m.notes[d]=rn;
-      else if(!rn)m.notes[d]=ln;
-      else if(ln!==rn)m.notes[d]=ln+'\n---\n'+rn; // both have content
-    }
-    // merge rest days
-    if(rm.restDays){
-      if(!m.restDays)m.restDays=[];
-      const allRest=new Set([...(m.restDays||[]),...rm.restDays]);
-      m.restDays=Array.from(allRest);
-    }
-    // merge reviews — prefer edited or longer
-    if(rm.weekReviews){
-      Object.keys(rm.weekReviews).forEach(k=>{
-        if(!m.weekReviews[k]||(!m.weekReviews[k].edited&&rm.weekReviews[k].edited)||(rm.weekReviews[k].text?.length>m.weekReviews[k].text?.length)){
-          m.weekReviews[k]=deepClone(rm.weekReviews[k]);
-        }
-      });
-    }
-    if(rm.monthReview&&(!m.monthReview?.edited&&rm.monthReview?.edited)){m.monthReview=deepClone(rm.monthReview);}
-    // merge goals
-    if(rm.moGoals){
-      const existIds=new Set((m.moGoals||[]).map(g=>g.id));
-      (rm.moGoals||[]).forEach(g=>{if(!existIds.has(g.id))m.moGoals.push(deepClone(g));});
-      // merge done state
-      (m.moGoals||[]).forEach(lg=>{const rg=(rm.moGoals||[]).find(g=>g.id===lg.id);if(rg&&rg.done)lg.done=true;});
-    }
-    if(rm.wkGoals){
-      Object.keys(rm.wkGoals).forEach(wk=>{
-        if(!m.wkGoals[wk])m.wkGoals[wk]=[];
-        const existIds=new Set(m.wkGoals[wk].map(g=>g.id));
-        (rm.wkGoals[wk]||[]).forEach(g=>{if(!existIds.has(g.id))m.wkGoals[wk].push(deepClone(g));});
-        m.wkGoals[wk].forEach(lg=>{const rg=(rm.wkGoals[wk]||[]).find(g=>g.id===lg.id);if(rg&&rg.done)lg.done=true;});
-      });
-    }
-    merged.months.push(m);
-  });
-  // Sort months by startDate
-  merged.months.sort((a,b)=>a.startDate<b.startDate?-1:1);
-  return merged;
-}
-
-function deepClone(o){return JSON.parse(JSON.stringify(o));}
-
-async function syncNow(){
-  if(!syncConfig.binId||!syncConfig.apiKey)return;
-  setSyncStatus('syncing');
-  const remote=await pullFromCloud();
-  if(remote){
-    const merged=mergeStates(state,remote);
-    state=merged;
-    // ensure curIdx is valid
-    if(curIdx>=state.months.length)curIdx=state.months.length-1;
-    saveLocal();
-    render();
-  }
-  await pushToCloud(state);
-}
-
-// Debounced sync — push 3s after last change
-function scheduleSync(){
-  if(!syncConfig.binId||!syncConfig.apiKey)return;
-  clearTimeout(syncTimer);
-  syncTimer=setTimeout(()=>{syncNow();},3000);
-}
-
-// Pull on page load if configured
-window.addEventListener('load',()=>{
-  setTimeout(()=>{if(syncConfig.binId&&syncConfig.apiKey)syncNow();},1200);
-});
-
-function openSyncModal(){
-  document.getElementById('syncBinId').value=syncConfig.binId||'';
-  document.getElementById('syncApiKey').value=syncConfig.apiKey||'';
-  document.getElementById('syncStatusBox').textContent=syncConfig.binId?'Configured. Last sync: '+(lastSyncTs?fmtTime(new Date(lastSyncTs)):'not yet'):'Not configured.';
-  document.getElementById('syncModal').classList.remove('hidden');
-}
-
-async function testSync(){
-  const binId=document.getElementById('syncBinId').value.trim();
-  const apiKey=document.getElementById('syncApiKey').value.trim();
-  if(!binId||!apiKey){document.getElementById('syncStatusBox').textContent='Enter both Bin ID and API key first.';return;}
-  document.getElementById('syncStatusBox').textContent='Testing…';
-  try{
-    const res=await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`,{headers:{'X-Master-Key':apiKey}});
-    if(res.ok)document.getElementById('syncStatusBox').textContent='✓ Connection successful!';
-    else document.getElementById('syncStatusBox').textContent='✗ Failed: '+res.status+' '+res.statusText;
-  }catch(e){document.getElementById('syncStatusBox').textContent='✗ Network error: '+e.message;}
-}
-
-async function applySyncSettings(){
-  const binId=document.getElementById('syncBinId').value.trim();
-  const apiKey=document.getElementById('syncApiKey').value.trim();
-  syncConfig={binId,apiKey};
-  localStorage.setItem('gnt_sync_cfg',JSON.stringify(syncConfig));
-  closeModal('syncModal');
-  if(binId&&apiKey){showToast('Cloud sync configured!');await syncNow();}
-  else{setSyncStatus('','sync');showToast('Sync cleared.');}
-}
 
 // ══════════════════════════════════════════════
 //  STATE
@@ -1241,7 +1021,7 @@ function loadState(){
 }
 
 function saveLocal(){localStorage.setItem('gnt_v2',JSON.stringify(state));}
-function save(){saveLocal();scheduleSync();scheduleCloudSave();}
+function save(){saveLocal();scheduleCloudSave();}
 function cur(){return state.months[curIdx];}
 
 let state=loadState();
@@ -2153,7 +1933,6 @@ function applySettings(){
 }
 
 document.getElementById('settingsModal').addEventListener('click',e=>{if(e.target===document.getElementById('settingsModal'))closeModal('settingsModal');});
-document.getElementById('syncModal').addEventListener('click',e=>{if(e.target===document.getElementById('syncModal'))closeModal('syncModal');});
 
 function exportCSV(){
   const md=Math.max(...state.months.map(m=>m.days));
@@ -2233,7 +2012,7 @@ function initSupabase(){
       document.getElementById('userChip').classList.add('hidden');
       const btn=document.getElementById('signInBtn');
       if(btn)btn.style.display='';
-      showToast('Signed out');
+      showToast('Signed out — data still saved locally');
     }
   });
 }
@@ -2384,7 +2163,6 @@ setTimeout(()=>{
     setTimeout(()=>splash.style.display='none',500);
   }
 },3000);
-if(syncConfig.binId&&syncConfig.apiKey){setSyncStatus('','configured');}else{setSyncStatus('','sync off');}
 // Init Supabase after app is fully loaded
 setTimeout(initSupabase,500);
 </script>
