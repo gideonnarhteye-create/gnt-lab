@@ -1996,16 +1996,17 @@ function initSupabase(){
     }
   }).catch(()=>{});
 
-  // Listen for auth changes
+  // Listen for auth changes — handle all events that mean user is logged in
   sb.auth.onAuthStateChange((event,session)=>{
-    if(event==='SIGNED_IN'&&session?.user){
+    if((event==='SIGNED_IN'||event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')&&session?.user){
+      if(sbUser?.id===session.user.id)return; // already handled
       sbUser=session.user;
       updateUserChip(session.user);
       closeModal('authModal');
       syncFromCloud(session.user);
       const btn=document.getElementById('signInBtn');
       if(btn)btn.style.display='none';
-      showToast('&#128075; Welcome back, '+getDisplayName(session.user)+'!');
+      if(event==='SIGNED_IN')showToast('&#128075; Welcome, '+getDisplayName(session.user)+'!');
     }
     if(event==='SIGNED_OUT'){
       sbUser=null;
