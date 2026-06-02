@@ -519,6 +519,22 @@ input[type=date]:focus,input[type=number]:focus,input[type=text].modal-inp:focus
 .auth-footer{text-align:center;padding:0 24px 16px;font-family:var(--mono);font-size:9px;color:var(--ink3)}
 .auth-footer a{color:var(--teal);cursor:pointer}
 
+
+/* ── NOTIFICATIONS ── */
+.notif-banner{position:fixed;bottom:80px;right:20px;max-width:320px;z-index:400;
+  display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.notif-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--r2);
+  padding:12px 14px;box-shadow:0 8px 32px rgba(0,0,0,.3);pointer-events:all;
+  animation:notifIn .3s ease;display:flex;gap:10px;align-items:flex-start}
+@keyframes notifIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+.notif-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.notif-content{flex:1}
+.notif-title{font-family:var(--display);font-size:12px;font-weight:700;color:var(--ink);margin-bottom:2px}
+.notif-body{font-family:var(--mono);font-size:10px;color:var(--ink2);line-height:1.5}
+.notif-close{background:none;border:none;color:var(--ink3);cursor:pointer;font-size:14px;
+  padding:0 2px;line-height:1;flex-shrink:0}
+.notif-close:hover{color:var(--ink)}
+
 </style>
 </head>
 <body>
@@ -837,6 +853,8 @@ input[type=date]:focus,input[type=number]:focus,input[type=text].modal-inp:focus
   </div>
 </div>
 
+
+<div id="notifBanner" class="notif-banner"></div>
 <div id="toastEl" class="toast hidden"></div>
 
 
@@ -1364,7 +1382,7 @@ function renderHead(){
   for(let d=s;d<=e;d++){
     const wi=weeks.findIndex(w=>d>=w.start&&d<=w.end);
     const isRest=isRestDay(m,d);
-    h+=`<th class="${isRest?'rest-hdr':wi!==pw&&d!==s?'ws':''}" title="${isRest?'Rest Day':fmtF(getDate(m,d))}">${d+1}</th>`;
+    h+=`<th class="${isRest?'rest-hdr':wi!==pw&&d!==s?'ws':''}" title="${isRest?'Click to remove rest day':'Click to mark as rest day'}" onclick="toggleRestDay(${d})" style="cursor:pointer">${d+1}${isRest?'&#9723;':''}</th>`;
     pw=wi;
   }
   h+='<th style="min-width:78px">rate</th><th style="min-width:42px">streak</th><th style="width:24px"></th></tr>';
@@ -1997,18 +2015,23 @@ function initSupabase(){
   }).catch(()=>{});
 
   // Listen for auth changes — handle all events that mean user is logged in
+  let lastHandledUserId=null;
   sb.auth.onAuthStateChange((event,session)=>{
     if((event==='SIGNED_IN'||event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')&&session?.user){
-      if(sbUser?.id===session.user.id)return; // already handled
+      const alreadyHandled=lastHandledUserId===session.user.id&&event!=='SIGNED_IN';
+      lastHandledUserId=session.user.id;
       sbUser=session.user;
       updateUserChip(session.user);
       closeModal('authModal');
-      syncFromCloud(session.user);
       const btn=document.getElementById('signInBtn');
       if(btn)btn.style.display='none';
-      if(event==='SIGNED_IN')showToast('&#128075; Welcome, '+getDisplayName(session.user)+'!');
+      if(!alreadyHandled){
+        syncFromCloud(session.user);
+        if(event==='SIGNED_IN')showToast('&#128075; Welcome, '+getDisplayName(session.user)+'!');
+      }
     }
     if(event==='SIGNED_OUT'){
+      lastHandledUserId=null;
       sbUser=null;
       document.getElementById('userChip').classList.add('hidden');
       const btn=document.getElementById('signInBtn');
@@ -2166,19 +2189,115 @@ function scheduleCloudSave(){
   cloudSaveTimer=setTimeout(()=>pushToCloud(sbUser),3000);
 }
 
-// Init
-populateCatSelects();
-render();
-updateAIIndicator();
-checkAISetup();
-// Splash screen — show for 3s then fade out
-setTimeout(()=>{
-  const splash=document.getElementById('splashScreen');
-  if(splash){
-    splash.classList.add('fade-out');
-    setTimeout(()=>splash.style.display='none',500);
+
+// ══════════════════════════════════════════════
+//  SMART NOTIFICATIONS
+// ══════════════════════════════════════════════
+let shownNotifs=new Set();
+try{const sn=JSON.parse(localStorage.getItem('gnt_notifs'));if(sn)shownNotifs=new Set(sn);}catch(e){}
+
+function saveShownNotifs(){localStorage.setItem('gnt_notifs',JSON.stringify([...shownNotifs]));}
+
+function showNotif(id,icon,title,body){
+  if(shownNotifs.has(id))return;
+  shownNotifs.add(id);saveShownNotifs();
+  const banner=document.getElementById('notifBanner');
+  const card=document.createElement('div');
+  card.className='notif-card';
+  card.innerHTML=`<div class="notif-icon">${icon}</div>
+    <div class="notif-content">
+      <div class="notif-title">${title}</div>
+      <div class="notif-body">${body}</div>
+    </div>
+    <button class="notif-close" onclick="this.closest('.notif-card').remove()">&#215;</button>`;
+  banner.appendChild(card);
+  // Auto dismiss after 8 seconds
+  setTimeout(()=>card.remove(),8000);
+}
+
+function checkNotifications(){
+  const m=cur();
+  const now=new Date();
+  const hour=now.getHours();
+  const todayOff=getTodayOff();
+  const todayKey=todayStr();
+
+  // ── 1. Evening habit reminder (8pm–10pm) ──
+  if(hour>=20&&hour<22&&todayOff>=0&&!isRestDay(m,todayOff)){
+    const done=m.grid.filter(r=>r[todayOff]===1).length;
+    const tot=m.habits.length;
+    const missed=m.grid.filter(r=>r[todayOff]===2).length;
+    const remaining=tot-done-missed;
+    if(remaining>0){
+      showNotif('habit-evening-'+todayKey,'⏰','Day almost over',
+        `${remaining} habit${remaining>1?'s':''} still unchecked today. Quick — log them before midnight!`);
+    }
   }
-},3000);
+
+  // ── 2. Weekly goal reminder (Thursday & Friday) ──
+  const dayOfWeek=now.getDay(); // 0=Sun, 4=Thu, 5=Fri
+  if((dayOfWeek===4||dayOfWeek===5)){
+    const wi=getCurrentWeekIdx();
+    const wkKey='w'+wi;
+    const wkGoals=m.wkGoals[wkKey]||[];
+    const pending=wkGoals.filter(g=>!g.done);
+    if(pending.length>0){
+      const weekNotifKey='wk-goals-'+todayKey.slice(0,7)+'-w'+wi;
+      showNotif(weekNotifKey,'📋','Week ending soon',
+        `${pending.length} weekly goal${pending.length>1?'s':''} still pending. Week ends in ${dayOfWeek===4?'2 days':'1 day'}.`);
+    }
+  }
+
+  // ── 3. Monthly goal reminder (last 3 days of month) ──
+  const daysLeft=m.days-todayOff;
+  if(daysLeft<=3&&daysLeft>0){
+    const moGoals=m.moGoals||[];
+    const pending=moGoals.filter(g=>!g.done);
+    if(pending.length>0){
+      const moNotifKey='mo-goals-'+todayKey;
+      showNotif(moNotifKey,'🗓️','Month ending soon',
+        `${pending.length} monthly goal${pending.length>1?'s':''} still pending. Only ${daysLeft} day${daysLeft>1?'s':''} left!`);
+    }
+  }
+
+  // ── 4. Streak at risk (missed yesterday) ──
+  if(todayOff>0&&!isRestDay(m,todayOff-1)){
+    const yesterday=todayOff-1;
+    const yDone=m.grid.filter(r=>r[yesterday]===1).length;
+    const yTotal=m.grid.filter(r=>r[yesterday]!==0).length;
+    if(yTotal===0&&hour>=10){ // nothing logged yesterday and it's past 10am
+      showNotif('streak-risk-'+todayKey,'🔥','Streak at risk',
+        'You didn’t log anything yesterday. Log today’s habits to keep your streak alive!');
+    }
+  }
+}
+
+// Check notifications on load and every hour
+setTimeout(checkNotifications, 2000);
+setInterval(checkNotifications, 3600000);
+
+// Init
+try{
+  populateCatSelects();
+  render();
+  updateAIIndicator();
+  checkAISetup();
+}catch(e){
+  console.error('Init error:',e);
+  // Still dismiss splash even if something fails
+  dismissSplash();
+}
+// Splash screen — show for 3s then fade out
+function dismissSplash(){
+  const splash=document.getElementById('splashScreen');
+  if(splash&&splash.style.display!=='none'){
+    splash.classList.add('fade-out');
+    setTimeout(()=>{splash.style.display='none';},500);
+  }
+}
+setTimeout(dismissSplash,3000);
+// Emergency fallback — always dismiss after 5s no matter what
+setTimeout(dismissSplash,5000);
 // Init Supabase after app is fully loaded
 setTimeout(initSupabase,500);
 </script>
