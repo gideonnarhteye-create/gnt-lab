@@ -2120,7 +2120,9 @@ async function handleEmailAuth(){
 async function handleOAuth(provider){
   if(!sb)return;
   try{
-    const{error}=await sb.auth.signInWithOAuth({provider,options:{redirectTo:window.location.href}});
+    // Always use clean base URL — no query params or hash from previous redirects
+    const cleanUrl=window.location.origin+window.location.pathname;
+    const{error}=await sb.auth.signInWithOAuth({provider,options:{redirectTo:cleanUrl}});
     if(error)throw error;
   }catch(e){showAuthErr(e.message||'Login failed.');}
 }
@@ -2280,6 +2282,11 @@ function checkNotifications(){
 setTimeout(checkNotifications, 2000);
 setInterval(checkNotifications, 3600000);
 
+// Clean URL after OAuth redirect (remove #access_token, ?code= etc)
+if(window.location.hash||window.location.search){
+  try{history.replaceState(null,'',window.location.pathname);}catch(e){}
+}
+
 // Init
 try{
   populateCatSelects();
@@ -2288,7 +2295,6 @@ try{
   checkAISetup();
 }catch(e){
   console.error('Init error:',e);
-  // Still dismiss splash even if something fails
   dismissSplash();
 }
 // Splash screen — show for 3s then fade out
