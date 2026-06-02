@@ -2014,24 +2014,28 @@ function initSupabase(){
     }
   }).catch(()=>{});
 
-  // Listen for auth changes — handle all events that mean user is logged in
-  let lastHandledUserId=null;
+  // Listen for auth changes
+  let sessionHandled=false;
   sb.auth.onAuthStateChange((event,session)=>{
-    if((event==='SIGNED_IN'||event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')&&session?.user){
-      const alreadyHandled=lastHandledUserId===session.user.id&&event!=='SIGNED_IN';
-      lastHandledUserId=session.user.id;
+    if(session?.user&&(event==='SIGNED_IN'||event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')){
       sbUser=session.user;
       updateUserChip(session.user);
       closeModal('authModal');
       const btn=document.getElementById('signInBtn');
       if(btn)btn.style.display='none';
-      if(!alreadyHandled){
+      // Always sync on SIGNED_IN (fresh login)
+      // Only sync once on INITIAL_SESSION/TOKEN_REFRESHED (page load)
+      if(event==='SIGNED_IN'){
+        sessionHandled=true;
         syncFromCloud(session.user);
-        if(event==='SIGNED_IN')showToast('&#128075; Welcome, '+getDisplayName(session.user)+'!');
+        showToast('&#128075; Welcome, '+getDisplayName(session.user)+'!');
+      } else if(!sessionHandled){
+        sessionHandled=true;
+        syncFromCloud(session.user);
       }
     }
     if(event==='SIGNED_OUT'){
-      lastHandledUserId=null;
+      sessionHandled=false;
       sbUser=null;
       document.getElementById('userChip').classList.add('hidden');
       const btn=document.getElementById('signInBtn');
