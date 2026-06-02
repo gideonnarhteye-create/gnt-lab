@@ -2001,17 +2001,25 @@ let cloudSaveTimer=null;
 // Show sign in button after app loads
 function initSupabase(){
   if(!sb)return;
-  let sessionHandled=false;
-  // Check existing session silently
+  let syncDone=false;
+
+  function handleSession(user, showWelcome){
+    sbUser=user;
+    updateUserChip(user);
+    closeModal('authModal');
+    const btn=document.getElementById('signInBtn');
+    if(btn)btn.style.display='none';
+    if(!syncDone){
+      syncDone=true;
+      syncFromCloud(user);
+      if(showWelcome)showToast('&#128075; Welcome, '+getDisplayName(user)+'!');
+    }
+  }
+
+  // Check session immediately on load
   sb.auth.getSession().then(({data:{session}})=>{
     if(session?.user){
-      sbUser=session.user;
-      updateUserChip(session.user);
-      const btn=document.getElementById('signInBtn');
-      if(btn)btn.style.display='none';
-      // Mark session as handled so onAuthStateChange doesn't double-sync
-      sessionHandled=true;
-      syncFromCloud(session.user);
+      handleSession(session.user, false);
     } else {
       const btn=document.getElementById('signInBtn');
       if(btn)btn.style.display='';
@@ -2021,27 +2029,15 @@ function initSupabase(){
     if(btn)btn.style.display='';
   });
 
-  // Listen for auth changes
+  // Also listen for changes — catches OAuth redirects and sign out
   sb.auth.onAuthStateChange((event,session)=>{
     if(session?.user&&(event==='SIGNED_IN'||event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')){
-      sbUser=session.user;
-      updateUserChip(session.user);
-      closeModal('authModal');
-      const btn=document.getElementById('signInBtn');
-      if(btn)btn.style.display='none';
-      // Always sync on SIGNED_IN (fresh login)
-      // Only sync once on INITIAL_SESSION/TOKEN_REFRESHED (page load)
-      if(event==='SIGNED_IN'){
-        sessionHandled=true;
-        syncFromCloud(session.user);
-        showToast('&#128075; Welcome, '+getDisplayName(session.user)+'!');
-      } else if(!sessionHandled){
-        sessionHandled=true;
-        syncFromCloud(session.user);
-      }
+      const isNewLogin=event==='SIGNED_IN';
+      if(isNewLogin)syncDone=false; // always re-sync on fresh login
+      handleSession(session.user, isNewLogin);
     }
     if(event==='SIGNED_OUT'){
-      sessionHandled=false;
+      syncDone=false;
       sbUser=null;
       document.getElementById('userChip').classList.add('hidden');
       const btn=document.getElementById('signInBtn');
@@ -2049,6 +2045,15 @@ function initSupabase(){
       showToast('Signed out — data still saved locally');
     }
   });
+
+  // Fallback — check session again after 2s in case onAuthStateChange missed it
+  setTimeout(()=>{
+    if(!sbUser){
+      sb.auth.getSession().then(({data:{session}})=>{
+        if(session?.user)handleSession(session.user, false);
+      }).catch(()=>{});
+    }
+  },2000);
 }
 
 function getDisplayName(user){
