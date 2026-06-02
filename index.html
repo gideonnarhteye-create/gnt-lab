@@ -2001,21 +2001,27 @@ let cloudSaveTimer=null;
 // Show sign in button after app loads
 function initSupabase(){
   if(!sb)return;
+  let sessionHandled=false;
   // Check existing session silently
   sb.auth.getSession().then(({data:{session}})=>{
     if(session?.user){
       sbUser=session.user;
       updateUserChip(session.user);
+      const btn=document.getElementById('signInBtn');
+      if(btn)btn.style.display='none';
+      // Mark session as handled so onAuthStateChange doesn't double-sync
+      sessionHandled=true;
       syncFromCloud(session.user);
     } else {
-      // Show sign in button — non blocking
       const btn=document.getElementById('signInBtn');
       if(btn)btn.style.display='';
     }
-  }).catch(()=>{});
+  }).catch(()=>{
+    const btn=document.getElementById('signInBtn');
+    if(btn)btn.style.display='';
+  });
 
   // Listen for auth changes
-  let sessionHandled=false;
   sb.auth.onAuthStateChange((event,session)=>{
     if(session?.user&&(event==='SIGNED_IN'||event==='INITIAL_SESSION'||event==='TOKEN_REFRESHED')){
       sbUser=session.user;
@@ -2308,8 +2314,8 @@ function dismissSplash(){
 setTimeout(dismissSplash,3000);
 // Emergency fallback — always dismiss after 5s no matter what
 setTimeout(dismissSplash,5000);
-// Init Supabase after app is fully loaded
-setTimeout(initSupabase,500);
+// Init Supabase immediately
+initSupabase();
 </script>
 </body>
 </html>
