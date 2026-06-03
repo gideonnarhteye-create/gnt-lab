@@ -609,6 +609,7 @@ input[type=date]:focus,input[type=number]:focus,input[type=text].modal-inp:focus
 <div id="userDropdown" class="user-dropdown hidden">
   <div class="ud-name" id="udName">Guest</div>
   <div class="ud-email" id="udEmail">Not signed in</div>
+  <div class="ud-item" onclick="manualSync();toggleUserDropdown()">&#9729; Sync now</div>
   <div class="ud-item" onclick="openAIModal();toggleUserDropdown()">&#9881; AI provider</div>
   <div class="ud-item" onclick="openSettings();toggleUserDropdown()">&#128197; Month settings</div>
   <div class="ud-item danger" id="signOutBtn" onclick="handleSignOut()">&#8594; Sign out</div>
@@ -1595,7 +1596,7 @@ const AI_PROVIDERS={
     linkText:'→ Get free key at aistudio.google.com',
     needsKey:true,
     call:async function(prompt,key){
-      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,{
+      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,{
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:1000}})
       });
@@ -2079,8 +2080,20 @@ document.addEventListener('click',e=>{
 });
 
 // ── AUTH MODAL ──
-function openAuthModal(){
+async function openAuthModal(){
   clearAuthMsgs();
+  // Check if already signed in first
+  if(sb){
+    const{data:{session}}=await sb.auth.getSession().catch(()=>({data:{session:null}}));
+    if(session?.user){
+      sbUser=session.user;
+      updateUserChip(session.user);
+      const btn=document.getElementById('signInBtn');
+      if(btn)btn.style.display='none';
+      showToast('&#128075; Already signed in as '+getDisplayName(session.user));
+      return;
+    }
+  }
   document.getElementById('authModal').classList.remove('hidden');
 }
 
@@ -2181,7 +2194,7 @@ async function syncFromCloud(user){
       if(data.ai_config?.provider){aiConfig=data.ai_config;localStorage.setItem('gnt_ai_cfg',JSON.stringify(aiConfig));updateAIIndicator();}
       if(data.theme){currentTheme=data.theme;localStorage.setItem('gnt_theme',data.theme);applyTheme(data.theme);}
       saveLocal();render();
-      showToast('&#9729; Data synced from cloud');
+      showToast('&#9729; Synced — '+getDisplayName(user));
     } else {
       // first time signing in — push local data up
       await pushToCloud(user);
@@ -2319,6 +2332,21 @@ function dismissSplash(){
 setTimeout(dismissSplash,3000);
 // Emergency fallback — always dismiss after 5s no matter what
 setTimeout(dismissSplash,5000);
+
+async function manualSync(){
+  if(!sb)return;
+  showToast('Syncing...');
+  const{data:{session}}=await sb.auth.getSession();
+  if(session?.user){
+    sbUser=session.user;
+    updateUserChip(session.user);
+    await syncFromCloud(session.user);
+    showToast('&#9729; Sync complete');
+  } else {
+    showToast('Not signed in');
+  }
+}
+
 // Init Supabase immediately
 initSupabase();
 </script>
