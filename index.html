@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="GNT Lab">
 <link rel="apple-touch-icon" id="appleIcon">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
 
 /* ── DARK THEME (default) ── */
 :root{
@@ -27,7 +27,7 @@
   --green:#4ade80;
   --rest:#818cf8;--rest-dim:rgba(129,140,248,.15);
   --ink:#d8e4f0;--ink2:#6e8299;--ink3:#334455;
-  --mono:'JetBrains Mono',monospace;--display:'Syne',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;--display:'Fraunces',Georgia,serif;--body:'Inter',system-ui,-apple-system,sans-serif;
   --r:8px;--r2:12px;
   --topbar-bg:rgba(7,9,13,.95);
   --grid-line:rgba(61,224,170,.022);
@@ -101,7 +101,8 @@
 
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{background:var(--bg);font-family:var(--display);color:var(--ink);min-height:100vh;font-size:14px;overflow-x:hidden;transition:background .25s,color .25s}
+body{background:var(--bg);font-family:var(--body);color:var(--ink);min-height:100vh;font-size:14px;overflow-x:hidden;transition:background .25s,color .25s;-webkit-font-smoothing:antialiased;letter-spacing:-.005em}
+h1,h2,h3,.today-title,.logo-name,.wm{font-family:var(--display);letter-spacing:-.015em}
 
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);
@@ -187,7 +188,8 @@ main{position:relative;z-index:1;max-width:1300px;margin:0 auto;padding:1.5rem 1
 .sl{font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)}
 
 /* ── PANEL ── */
-.panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;margin-bottom:1.4rem;transition:background .25s,border-color .25s}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;margin-bottom:1.4rem;transition:background .25s,border-color .25s,box-shadow .25s;box-shadow:0 1px 0 rgba(0,0,0,.15),0 12px 32px -18px rgba(0,0,0,.5)}
+.panel:hover{box-shadow:0 1px 0 rgba(0,0,0,.2),0 18px 44px -20px rgba(0,0,0,.6)}
 .ph{padding:10px 16px;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;
   background:var(--bg3);flex-wrap:wrap;gap:6px;transition:background .25s}
 .pt{font-family:var(--mono);font-size:10px;color:var(--teal);letter-spacing:.08em;text-transform:uppercase}
@@ -328,7 +330,7 @@ table.ht td.rest-col{background:var(--rest-dim)!important}
 /* ── CHARTS ── */
 .cg{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.4rem}
 @media(max-width:680px){.cg{grid-template-columns:1fr}}
-.cpanel{background:var(--panel);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;transition:background .25s}
+.cpanel{background:var(--panel);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;transition:background .25s,box-shadow .25s;box-shadow:0 1px 0 rgba(0,0,0,.15),0 12px 32px -18px rgba(0,0,0,.5)}
 .chdr{padding:10px 16px;border-bottom:1px solid var(--border2);background:var(--bg3);display:flex;align-items:center;justify-content:space-between;transition:background .25s}
 .ctit{font-family:var(--mono);font-size:10px;color:var(--teal);letter-spacing:.08em;text-transform:uppercase}
 .cbody{padding:14px;height:200px;position:relative}
@@ -695,6 +697,9 @@ input[type=date]:focus,input[type=number]:focus,input[type=text].modal-inp:focus
   <div class="cpanel"><div class="chdr"><span class="ctit">daily completion %</span><span id="cScope" style="font-family:var(--mono);font-size:9px;color:var(--ink3)"></span></div><div class="cbody"><canvas id="barChart"></canvas></div></div>
   <div class="cpanel"><div class="chdr"><span class="ctit">mood over time</span></div><div class="cbody"><canvas id="lineChart"></canvas></div></div>
 </div>
+<div class="cg">
+  <div class="cpanel" style="grid-column:1 / -1"><div class="chdr"><span class="ctit">weekly completion trend</span><span style="font-family:var(--mono);font-size:9px;color:var(--ink3)">% done per week</span></div><div class="cbody"><canvas id="weekTrendChart"></canvas></div></div>
+</div>
 
 <div class="sec">// habit tracker</div>
 <div class="panel">
@@ -801,6 +806,10 @@ input[type=date]:focus,input[type=number]:focus,input[type=text].modal-inp:focus
       </div>
     </div>
     <div class="ai-status-row" id="aiStatusRow"></div>
+    <div id="aiDebugBox" style="margin-top:10px;padding:10px;border:1px dashed var(--border3);border-radius:8px;font-family:var(--mono);font-size:10px;color:var(--ink2);background:var(--bg4);white-space:pre-wrap;word-break:break-word;max-height:140px;overflow:auto">
+      <b style="color:var(--ink)">debug · last AI request</b><br>
+      <span id="aiDebugContent">No request yet. Click "test connection" or generate a review.</span>
+    </div>
     <div class="mact">
       <button class="btn" onclick="closeModal('aiModal')">cancel</button>
       <button class="btn amber-btn" onclick="testAI()">test</button>
@@ -1045,7 +1054,7 @@ function cur(){return state.months[curIdx];}
 
 let state=loadState();
 let curIdx=0,curWk='all',notesWk=0;
-let barI=null,lineI=null;
+let barI=null,lineI=null,weekTrendI=null;
 // goal tab state
 let wkGoalTab='all',moGoalTab='all';
 
@@ -1481,7 +1490,7 @@ function renderCharts(){
     }
   }
   document.getElementById('cScope').textContent=curWk==='all'?getMonthLabel(m):`Week ${curWk+1}`;
-  if(barI)barI.destroy();if(lineI)lineI.destroy();
+  if(barI)barI.destroy();if(lineI)lineI.destroy();if(weekTrendI)weekTrendI.destroy();
   const tickColor=getComputedStyle(document.documentElement).getPropertyValue('--ink3').trim()||'#334455';
   const gridColor=getComputedStyle(document.documentElement).getPropertyValue('--border2').trim()||'rgba(255,255,255,.024)';
   const ax={ticks:{color:tickColor,font:{size:9,family:'JetBrains Mono'},maxRotation:0,autoSkip:true,maxTicksLimit:16},grid:{color:gridColor},border:{color:gridColor}};
@@ -1492,6 +1501,14 @@ function renderCharts(){
     data:{labels,datasets:[{data:ld,borderColor:'#ffc947',backgroundColor:'rgba(255,201,71,.06)',pointBackgroundColor:'#ffc947',pointRadius:3,pointHoverRadius:5,tension:.35,fill:true,spanGaps:true}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const em=Object.entries(MOOD_SC).find(([k,v])=>v===c.raw)?.[0]||'';return`mood: ${em} (${c.raw}/5)`;}}}},
       scales:{x:{...ax},y:{...ax,min:.5,max:5.5,ticks:{...ax.ticks,stepSize:1,callback:v=>({5:'top',4:'good',3:'ok',2:'low',1:'rough'}[v]||'')}}}}});
+  // weekly completion trend — % done per week across the current month
+  const weeks=getWeeks(m);
+  const wkLabels=weeks.map((_,i)=>'W'+(i+1));
+  const wkData=weeks.map(w=>{const st=calcWkStats(m,w.start,w.end);return st.done+st.miss>0?st.rate:null;});
+  const tealCol=getComputedStyle(document.documentElement).getPropertyValue('--teal').trim()||'#3de0aa';
+  weekTrendI=new Chart(document.getElementById('weekTrendChart').getContext('2d'),{type:'line',
+    data:{labels:wkLabels,datasets:[{label:'% done',data:wkData,borderColor:tealCol,backgroundColor:'rgba(61,224,170,.10)',pointBackgroundColor:tealCol,pointRadius:5,pointHoverRadius:7,borderWidth:2.5,tension:.35,fill:true,spanGaps:true}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw===null?'no data':`${c.raw}% completion`}}},scales:{x:{...ax},y:{...ax,min:0,max:100,ticks:{...ax.ticks,callback:v=>v+'%'}}}}});
 }
 
 // ══════════════════════════════════════════════
@@ -1588,6 +1605,22 @@ Under 260 words. Analytical. Use "you". No bullet points.`;
 // ══════════════════════════════════════════════
 //  AI PROVIDER CONFIG
 // ══════════════════════════════════════════════
+let lastAICall=null;
+function recordAICall(provider,status,statusText,errMsg,ok){
+  lastAICall={provider,status,statusText:statusText||'',error:errMsg||'',ok:!!ok,at:new Date().toISOString()};
+  try{renderAIDebug();}catch(e){}
+}
+function renderAIDebug(){
+  const el=document.getElementById('aiDebugContent');if(!el)return;
+  if(!lastAICall){el.textContent='No request yet. Click "test connection" or generate a review.';return;}
+  const c=lastAICall;
+  el.innerHTML=
+    'provider: '+c.provider+'\n'+
+    'status:   '+c.status+' '+c.statusText+'\n'+
+    'ok:       '+(c.ok?'true':'false')+'\n'+
+    'time:     '+c.at+'\n'+
+    'error:    '+(c.error||'(none)');
+}
 const AI_PROVIDERS={
   gemini:{
     name:'Google Gemini',
@@ -1596,12 +1629,14 @@ const AI_PROVIDERS={
     linkText:'→ Get free key at aistudio.google.com',
     needsKey:true,
     call:async function(prompt,key){
-      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${key}`,{
+      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${encodeURIComponent(key)}`,{
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:1000}})
       });
-      const d=await res.json();
-      if(!res.ok)throw new Error(d.error?.message||'Gemini error');
+      const d=await res.json().catch(()=>({}));
+      const errM=d.error?.message||'';
+      recordAICall('gemini',res.status,res.statusText,errM,res.ok);
+      if(!res.ok)throw new Error('Gemini '+res.status+': '+(errM||res.statusText||'request failed'));
       return d.candidates?.[0]?.content?.parts?.[0]?.text||'No response.';
     }
   },
@@ -1616,8 +1651,10 @@ const AI_PROVIDERS={
         method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
         body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:1000,messages:[{role:'user',content:prompt}]})
       });
-      const d=await res.json();
-      if(!res.ok)throw new Error(d.error?.message||'Groq error');
+      const d=await res.json().catch(()=>({}));
+      const errM=d.error?.message||'';
+      recordAICall('groq',res.status,res.statusText,errM,res.ok);
+      if(!res.ok)throw new Error('Groq '+res.status+': '+(errM||res.statusText||'request failed'));
       return d.choices?.[0]?.message?.content||'No response.';
     }
   },
@@ -1632,8 +1669,10 @@ const AI_PROVIDERS={
         method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key,'HTTP-Referer':'https://gnt-lab.app','X-Title':'GNT Consistency Lab'},
         body:JSON.stringify({model:'mistralai/mistral-7b-instruct:free',max_tokens:1000,messages:[{role:'user',content:prompt}]})
       });
-      const d=await res.json();
-      if(!res.ok)throw new Error(d.error?.message||'OpenRouter error');
+      const d=await res.json().catch(()=>({}));
+      const errM=d.error?.message||'';
+      recordAICall('openrouter',res.status,res.statusText,errM,res.ok);
+      if(!res.ok)throw new Error('OpenRouter '+res.status+': '+(errM||res.statusText||'request failed'));
       return d.choices?.[0]?.message?.content||'No response.';
     }
   },
@@ -1645,11 +1684,13 @@ const AI_PROVIDERS={
     needsKey:true,
     call:async function(prompt,key){
       const res=await fetch('https://api.anthropic.com/v1/messages',{
-        method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
-        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+        method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({model:'claude-3-5-sonnet-latest',max_tokens:1000,messages:[{role:'user',content:prompt}]})
       });
-      const d=await res.json();
-      if(!res.ok)throw new Error(d.error?.message||'Claude error');
+      const d=await res.json().catch(()=>({}));
+      const errM=d.error?.message||'';
+      recordAICall('claude',res.status,res.statusText,errM,res.ok);
+      if(!res.ok)throw new Error('Claude '+res.status+': '+(errM||res.statusText||'request failed'));
       return d.content?.[0]?.text||'No response.';
     }
   },
@@ -1664,8 +1705,10 @@ const AI_PROVIDERS={
         method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
         body:JSON.stringify({model:'gpt-4o-mini',max_tokens:1000,messages:[{role:'user',content:prompt}]})
       });
-      const d=await res.json();
-      if(!res.ok)throw new Error(d.error?.message||'OpenAI error');
+      const d=await res.json().catch(()=>({}));
+      const errM=d.error?.message||'';
+      recordAICall('openai',res.status,res.statusText,errM,res.ok);
+      if(!res.ok)throw new Error('OpenAI '+res.status+': '+(errM||res.statusText||'request failed'));
       return d.choices?.[0]?.message?.content||'No response.';
     }
   },
@@ -1676,8 +1719,10 @@ const AI_PROVIDERS={
     needsKey:false,
     call:async function(prompt){
       const res=await fetch('https://text.pollinations.ai/'+encodeURIComponent(prompt),{method:'GET'});
-      if(!res.ok)throw new Error('Pollinations error');
-      return await res.text();
+      const txt=await res.text().catch(()=>'');
+      recordAICall('pollinations',res.status,res.statusText,res.ok?'':txt.slice(0,200),res.ok);
+      if(!res.ok)throw new Error('Pollinations '+res.status+': '+(res.statusText||'request failed'));
+      return txt;
     }
   }
 };
@@ -1710,6 +1755,7 @@ function openAIModal(){
   document.getElementById('aiKeyInp').value=aiConfig.key||'';
   document.getElementById('aiStatusRow').textContent='';
   document.getElementById('aiModal').classList.remove('hidden');
+  renderAIDebug();
 }
 
 function selectProvider(p){
