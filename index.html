@@ -1552,11 +1552,11 @@ School goals: ${goalsSchool.join(', ')||'none'}
 Personal study goals: ${goalsPersonal.join(', ')||'none'}
 Other goals completed: ${goalsDone.join(', ')||'none'}
 Pending goals: ${goalsPending.join(', ')||'none'}
-Notes: ${notes.join(' | ')||'none'}
+Journal entries: ${notes.join(' | ')||'none'}
 
 Write 3 short paragraphs:
 1. What the numbers say — performance, mood, best/worst habits
-2. Specific habits AND goals (school + personal) that need attention — be direct, name them
+2. Specific habits AND goals (school + personal) that need attention — be direct, name them. Reference the journal entries when they reveal context (struggles, wins, recurring themes).
 3. Concrete plan for next week — 2-3 specific actions, mention school/personal balance if relevant
 
 Under 180 words. Analytical and direct. Use "you". No bullet points.`;
@@ -1581,6 +1581,7 @@ function buildMoPrompt(m){
   const needs=hRates.filter(h=>h.rate>=0&&h.rate<60).sort((a,b)=>a.rate-b.rate);
   const strong=hRates.filter(h=>h.rate>=80).sort((a,b)=>b.rate-a.rate);
   const totalRest=(m.restDays||[]).length;
+  const moNotes=[];(m.notes||[]).forEach((n,di)=>{if(n&&n.trim())moNotes.push(`D${di+1}:${n.trim()}`);});
   return `You are a personal consistency coach. Write a monthly review.
 
 Month: ${getMonthLabel(m)} | ${m.days} days | ${totalRest} rest days | Overall: ${rate}%
@@ -1591,6 +1592,9 @@ Needs work: ${needs.slice(0,4).map(h=>h.n+'('+h.rate+'%)').join(', ')||'none'}
 School goals: ${mgSchool.join(', ')||'none'}
 Personal study goals: ${mgPersonal.join(', ')||'none'}
 Avg mood: ${avgMood||'N/A'}/5
+Journal entries: ${moNotes.join(' | ')||'none'}
+
+Use the journal entries as context — reference recurring themes, struggles, or wins the user mentioned in their own words when relevant.
 
 Write 4 paragraphs:
 1. Month overview — numbers, weekly trend, rest day balance
