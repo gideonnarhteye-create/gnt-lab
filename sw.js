@@ -1,4 +1,4 @@
-const CACHE = 'gnt-v17';
+const CACHE = 'gnt-v18';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
