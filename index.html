@@ -1554,12 +1554,13 @@ Other goals completed: ${goalsDone.join(', ')||'none'}
 Pending goals: ${goalsPending.join(', ')||'none'}
 Journal entries: ${notes.join(' | ')||'none'}
 
-Write 3 short paragraphs:
+Write 4 short paragraphs:
 1. What the numbers say — performance, mood, best/worst habits
 2. Specific habits AND goals (school + personal) that need attention — be direct, name them. Reference the journal entries when they reveal context (struggles, wins, recurring themes).
-3. Concrete plan for next week — 2-3 specific actions, mention school/personal balance if relevant
+3. Suggestions — 2-3 concrete things you should try next week (new habits to add, ones to drop or pause, mindset shifts, study techniques). Be specific, not generic.
+4. Schedule changes — propose adjustments to your daily/weekly routine: time-of-day shifts, reordering, blocking time, adding rest, pairing habits. Tie them to what the data and journal show.
 
-Under 180 words. Analytical and direct. Use "you". No bullet points.`;
+Under 230 words. Analytical and direct. Use "you". No bullet points.`;
 }
 
 function buildMoPrompt(m){
@@ -1596,13 +1597,14 @@ Journal entries: ${moNotes.join(' | ')||'none'}
 
 Use the journal entries as context — reference recurring themes, struggles, or wins the user mentioned in their own words when relevant.
 
-Write 4 paragraphs:
+Write 5 paragraphs:
 1. Month overview — numbers, weekly trend, rest day balance
 2. Habit analysis — what you mastered vs neglected, by category
 3. Goals review — school and personal study achievements, what slipped
-4. Strategy for next month — specific targets, school/personal study balance
+4. Suggestions — 2-3 concrete things to try next month (habits to add, drop, or restructure; study or focus techniques; mindset shifts). Be specific to what the data and journal show.
+5. Schedule changes — propose adjustments to your routine: time-of-day shifts, blocking sessions, pairing habits, adding/removing rest days, weekly cadence. Tie each to evidence from the month.
 
-Under 260 words. Analytical. Use "you". No bullet points.`;
+Under 320 words. Analytical. Use "you". No bullet points.`;
 }
 
 
