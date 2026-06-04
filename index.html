@@ -1614,12 +1614,60 @@ function renderAIDebug(){
   const el=document.getElementById('aiDebugContent');if(!el)return;
   if(!lastAICall){el.textContent='No request yet. Click "test connection" or generate a review.';return;}
   const c=lastAICall;
+  let extra='';
+  try{
+    const raw=localStorage.getItem('gnt_gemini_model');
+    if(raw){
+      const cc=JSON.parse(raw);
+      if(cc&&cc.model) extra='\ngemini:   '+cc.model+' (cached '+new Date(cc.at).toISOString()+')';
+    }
+  }catch(e){}
   el.innerHTML=
     'provider: '+c.provider+'\n'+
     'status:   '+c.status+' '+c.statusText+'\n'+
     'ok:       '+(c.ok?'true':'false')+'\n'+
     'time:     '+c.at+'\n'+
-    'error:    '+(c.error||'(none)');
+    'error:    '+(c.error||'(none)')+extra;
+}
+// Auto-discover the best available Gemini Flash model for this API key.
+async function getGeminiModel(key,force){
+  const CACHE_KEY='gnt_gemini_model';
+  const TTL=24*60*60*1000;
+  if(!force){
+    try{
+      const raw=localStorage.getItem(CACHE_KEY);
+      if(raw){
+        const c=JSON.parse(raw);
+        if(c && c.model && (Date.now()-c.at)<TTL) return c.model;
+      }
+    }catch(e){}
+  }
+  try{
+    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`);
+    if(r.ok){
+      const j=await r.json();
+      const models=(j.models||[])
+        .filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent'))
+        .map(m=>(m.name||'').replace(/^models\//,''))
+        .filter(n=>/^gemini-(2\.5|2\.0)-flash/.test(n) && !/-(vision|tts|image|embedding|exp)/i.test(n));
+      function score(n){
+        let s=0;
+        if(n.startsWith('gemini-2.5-flash')) s+=1000;
+        else if(n.startsWith('gemini-2.0-flash')) s+=500;
+        if(!/-lite/.test(n)) s+=50;
+        if(!/-preview/.test(n)) s+=20;
+        if(/-latest$/.test(n)) s+=10;
+        return s;
+      }
+      models.sort((a,b)=>score(b)-score(a));
+      const pick=models[0];
+      if(pick){
+        try{localStorage.setItem(CACHE_KEY,JSON.stringify({model:pick,at:Date.now()}));}catch(e){}
+        return pick;
+      }
+    }
+  }catch(e){}
+  return 'gemini-2.0-flash';
 }
 const AI_PROVIDERS={
   gemini:{
@@ -1629,13 +1677,23 @@ const AI_PROVIDERS={
     linkText:'→ Get free key at aistudio.google.com',
     needsKey:true,
     call:async function(prompt,key){
-      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${encodeURIComponent(key)}`,{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:1000}})
-      });
-      const d=await res.json().catch(()=>({}));
-      const errM=d.error?.message||'';
-      recordAICall('gemini',res.status,res.statusText,errM,res.ok);
+      async function callOnce(model){
+        const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:1000}})
+        });
+        const d=await res.json().catch(()=>({}));
+        const errM=d.error?.message||'';
+        return {res,d,errM};
+      }
+      let model=await getGeminiModel(key);
+      let {res,d,errM}=await callOnce(model);
+      if(!res.ok && res.status===404){
+        try{localStorage.removeItem('gnt_gemini_model');}catch(e){}
+        model=await getGeminiModel(key,true);
+        ({res,d,errM}=await callOnce(model));
+      }
+      recordAICall('gemini ('+model+')',res.status,res.statusText,errM,res.ok);
       if(!res.ok)throw new Error('Gemini '+res.status+': '+(errM||res.statusText||'request failed'));
       return d.candidates?.[0]?.content?.parts?.[0]?.text||'No response.';
     }
