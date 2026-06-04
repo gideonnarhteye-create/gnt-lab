@@ -1554,11 +1554,12 @@ Other goals completed: ${goalsDone.join(', ')||'none'}
 Pending goals: ${goalsPending.join(', ')||'none'}
 Journal entries: ${notes.join(' | ')||'none'}
 
-Write 4 short paragraphs:
+Write 5 short sections:
 1. What the numbers say — performance, mood, best/worst habits
-2. Specific habits AND goals (school + personal) that need attention — be direct, name them. Reference the journal entries when they reveal context (struggles, wins, recurring themes).
-3. Suggestions — 2-3 concrete things you should try next week (new habits to add, ones to drop or pause, mindset shifts, study techniques). Be specific, not generic.
-4. Schedule changes — propose adjustments to your daily/weekly routine: time-of-day shifts, reordering, blocking time, adding rest, pairing habits. Tie them to what the data and journal show.
+2. Specific habits AND goals (school + personal) that need attention — be direct, name them. Reference the journal entries when they reveal context (struggles, wins, recurring themes)
+3. Concrete plan for next week — 2-3 specific actions, mention school/personal balance if relevant
+4. Suggestions — 2-3 concrete things to try next week (new habits to add or drop, mindset shifts, study techniques)
+5. Schedule changes — recommend time-of-day shifts, reordering tasks, blocking time, adding rest, or pairing habits tied to the data
 
 Under 230 words. Analytical and direct. Use "you". No bullet points.`;
 }
@@ -1582,7 +1583,6 @@ function buildMoPrompt(m){
   const needs=hRates.filter(h=>h.rate>=0&&h.rate<60).sort((a,b)=>a.rate-b.rate);
   const strong=hRates.filter(h=>h.rate>=80).sort((a,b)=>b.rate-a.rate);
   const totalRest=(m.restDays||[]).length;
-  const moNotes=[];(m.notes||[]).forEach((n,di)=>{if(n&&n.trim())moNotes.push(`D${di+1}:${n.trim()}`);});
   return `You are a personal consistency coach. Write a monthly review.
 
 Month: ${getMonthLabel(m)} | ${m.days} days | ${totalRest} rest days | Overall: ${rate}%
@@ -1592,17 +1592,17 @@ Strong: ${strong.slice(0,4).map(h=>h.n+'('+h.rate+'%)').join(', ')||'none'}
 Needs work: ${needs.slice(0,4).map(h=>h.n+'('+h.rate+'%)').join(', ')||'none'}
 School goals: ${mgSchool.join(', ')||'none'}
 Personal study goals: ${mgPersonal.join(', ')||'none'}
+Completed goals: ${mgDone.join(', ')||'none'}
+Pending goals: ${mgPending.join(', ')||'none'}
 Avg mood: ${avgMood||'N/A'}/5
-Journal entries: ${moNotes.join(' | ')||'none'}
 
-Use the journal entries as context — reference recurring themes, struggles, or wins the user mentioned in their own words when relevant.
-
-Write 5 paragraphs:
+Write 6 paragraphs:
 1. Month overview — numbers, weekly trend, rest day balance
 2. Habit analysis — what you mastered vs neglected, by category
 3. Goals review — school and personal study achievements, what slipped
-4. Suggestions — 2-3 concrete things to try next month (habits to add, drop, or restructure; study or focus techniques; mindset shifts). Be specific to what the data and journal show.
-5. Schedule changes — propose adjustments to your routine: time-of-day shifts, blocking sessions, pairing habits, adding/removing rest days, weekly cadence. Tie each to evidence from the month.
+4. Strategy for next month — specific targets, school/personal study balance
+5. Suggestions — 2-3 concrete things to try next month (habits to add/drop/restructure, study or focus techniques, mindset shifts)
+6. Schedule changes — recommend time-of-day shifts, blocking sessions, pairing habits, adding or removing rest days, or weekly cadence changes tied to the evidence
 
 Under 320 words. Analytical. Use "you". No bullet points.`;
 }
@@ -1620,60 +1620,12 @@ function renderAIDebug(){
   const el=document.getElementById('aiDebugContent');if(!el)return;
   if(!lastAICall){el.textContent='No request yet. Click "test connection" or generate a review.';return;}
   const c=lastAICall;
-  let extra='';
-  try{
-    const raw=localStorage.getItem('gnt_gemini_model');
-    if(raw){
-      const cc=JSON.parse(raw);
-      if(cc&&cc.model) extra='\ngemini:   '+cc.model+' (cached '+new Date(cc.at).toISOString()+')';
-    }
-  }catch(e){}
   el.innerHTML=
     'provider: '+c.provider+'\n'+
     'status:   '+c.status+' '+c.statusText+'\n'+
     'ok:       '+(c.ok?'true':'false')+'\n'+
     'time:     '+c.at+'\n'+
-    'error:    '+(c.error||'(none)')+extra;
-}
-// Auto-discover the best available Gemini Flash model for this API key.
-async function getGeminiModel(key,force){
-  const CACHE_KEY='gnt_gemini_model';
-  const TTL=24*60*60*1000;
-  if(!force){
-    try{
-      const raw=localStorage.getItem(CACHE_KEY);
-      if(raw){
-        const c=JSON.parse(raw);
-        if(c && c.model && (Date.now()-c.at)<TTL) return c.model;
-      }
-    }catch(e){}
-  }
-  try{
-    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`);
-    if(r.ok){
-      const j=await r.json();
-      const models=(j.models||[])
-        .filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent'))
-        .map(m=>(m.name||'').replace(/^models\//,''))
-        .filter(n=>/^gemini-(2\.5|2\.0)-flash/.test(n) && !/-(vision|tts|image|embedding|exp)/i.test(n));
-      function score(n){
-        let s=0;
-        if(n.startsWith('gemini-2.5-flash')) s+=1000;
-        else if(n.startsWith('gemini-2.0-flash')) s+=500;
-        if(!/-lite/.test(n)) s+=50;
-        if(!/-preview/.test(n)) s+=20;
-        if(/-latest$/.test(n)) s+=10;
-        return s;
-      }
-      models.sort((a,b)=>score(b)-score(a));
-      const pick=models[0];
-      if(pick){
-        try{localStorage.setItem(CACHE_KEY,JSON.stringify({model:pick,at:Date.now()}));}catch(e){}
-        return pick;
-      }
-    }
-  }catch(e){}
-  return 'gemini-2.0-flash';
+    'error:    '+(c.error||'(none)');
 }
 const AI_PROVIDERS={
   gemini:{
@@ -1683,23 +1635,13 @@ const AI_PROVIDERS={
     linkText:'→ Get free key at aistudio.google.com',
     needsKey:true,
     call:async function(prompt,key){
-      async function callOnce(model){
-        const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,{
-          method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:1000}})
-        });
-        const d=await res.json().catch(()=>({}));
-        const errM=d.error?.message||'';
-        return {res,d,errM};
-      }
-      let model=await getGeminiModel(key);
-      let {res,d,errM}=await callOnce(model);
-      if(!res.ok && res.status===404){
-        try{localStorage.removeItem('gnt_gemini_model');}catch(e){}
-        model=await getGeminiModel(key,true);
-        ({res,d,errM}=await callOnce(model));
-      }
-      recordAICall('gemini ('+model+')',res.status,res.statusText,errM,res.ok);
+      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${encodeURIComponent(key)}`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:1000}})
+      });
+      const d=await res.json().catch(()=>({}));
+      const errM=d.error?.message||'';
+      recordAICall('gemini',res.status,res.statusText,errM,res.ok);
       if(!res.ok)throw new Error('Gemini '+res.status+': '+(errM||res.statusText||'request failed'));
       return d.candidates?.[0]?.content?.parts?.[0]?.text||'No response.';
     }
